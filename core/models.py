@@ -264,6 +264,7 @@ class Employee(ModelBase):
         db_column='id_department',
         null=False,
         verbose_name='Department',
+        related_name='employees'
     )
     marital_status = models.ForeignKey(
         to='MaritalStatus',
@@ -438,6 +439,8 @@ class Product(ModelBase):
         verbose_name='Supplier',
         null=False
     )
+    def __str__(self):
+        return self.name
 
     class Meta:
         db_table = 'product'
