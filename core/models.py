@@ -439,6 +439,7 @@ class Product(ModelBase):
         verbose_name='Supplier',
         null=False
     )
+
     def __str__(self):
         return self.name
 

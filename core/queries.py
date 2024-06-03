@@ -1,6 +1,7 @@
 from core import models
 from django.db.models import Q, Value, FloatField, \
-    ExpressionWrapper, F, IntegerField, When, Case, CharField, Count, Sum, Avg
+    ExpressionWrapper, F, IntegerField, When, Case, CharField, \
+    Count, Sum, Avg, Subquery, OuterRef, Exists
 from django.db.models.functions import LPad, Lower, Upper, Cast
 
 
@@ -239,3 +240,42 @@ def sum_salary_by_gender_and_marital_status():
         .annotate(estado_civil=F('marital_status__name')) \
         .values('gender', 'estado_civil') \
         .annotate(avg=Avg('salary'))
+
+
+# Group by with join
+def sum_salary_by_department():
+    return models.Employee.objects \
+        .values('department__name') \
+        .annotate(
+        soma=Sum('salary'),
+        department_name=F('department__name')
+    ).values('soma', 'department_name')
+
+
+def last_sale_of_each_product():
+    sbq = models.SaleItem.objects.select_related('sale') \
+              .filter(product_id=OuterRef('pk')) \
+              .values('sale__date') \
+              .order_by('-sale__date')[:1]
+
+    return models.Product.objects.annotate(
+        last_sale=Subquery(sbq)
+    ).values('id', 'last_sale', 'name')
+
+
+def employee_with_sale():
+    sbq = models.Sale.objects.filter(employee_id=OuterRef('id'))
+    return models.Employee.objects.annotate(
+        has_sale=Exists(sbq)
+    ).filter(has_sale=False).values('name', 'has_sale')
+
+
+def total_sale_of_each_employee():
+    sbq = models.SaleItem.objects.select_related('sale') \
+              .filter(sale__employee_id=OuterRef('pk')) \
+              .annotate(soma=ExpressionWrapper(Sum(F('quantity') * F('product_price')), output_field=FloatField())) \
+              .values('soma')[:1]
+
+    return models.Employee.objects.annotate(
+        soma=Subquery(sbq)
+    ).filter(soma__isnull=False).values('id', 'name', 'soma')
