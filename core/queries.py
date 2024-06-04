@@ -279,3 +279,11 @@ def total_sale_of_each_employee():
     return models.Employee.objects.annotate(
         soma=Subquery(sbq)
     ).filter(soma__isnull=False).values('id', 'name', 'soma')
+
+
+def employee_count_by_department(name):
+    return models.Department.objects \
+        .filter(name__icontains=name) \
+        .values('name') \
+        .annotate(qty=Count('employees__id')) \
+        .values('name', 'qty')
