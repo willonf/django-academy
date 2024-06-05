@@ -1,7 +1,7 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from core import models, serializers, params_serializers, queries, results_serializers
+from core import models, serializers, params_serializers, queries, results_serializers, filters, tasks
 
 from rest_framework import viewsets, status
 
@@ -10,15 +10,22 @@ class StateViewSet(viewsets.ModelViewSet):
     queryset = models.State.objects.all()
     serializer_class = serializers.StateSerializer
 
+    def create(self, request, *args, **kwargs):
+        instance = super(StateViewSet, self).create(request, *args, **kwargs)
+        tasks.create_file.apply_async([instance.data.get('id')])
+        return instance
+
 
 class CityViewSet(viewsets.ModelViewSet):
-    queryset = models.City.objects.all()
+    queryset = models.City.objects.select_related('state').all()
     serializer_class = serializers.CitySerializer
 
 
 class ZoneViewSet(viewsets.ModelViewSet):
     queryset = models.Zone.objects.all()
     serializer_class = serializers.ZoneSerializer
+    ordering = ('-id',)
+    ordering_fields = '__all__'
 
     @action(detail=False, methods=['GET'])
     def get_zone_by_name(self, request, *args, **kwargs):
@@ -78,18 +85,18 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         # Aplicação dos parâmetros validados/serializados
         result = queries.employee_count_by_department(name=depart_name)
 
-        # Validação da query resultante
-        # result_serializer = results_serializers.EmployeeCountByDepartmentSerializer(data=result, many=True)
-        # result_serializer.is_valid(raise_exception=True)
-        # result_data = result_serializer.validated_data
-
-        # Envio do resultado serializado
-        return Response(result, status=status.HTTP_200_OK)
+        result_serializer = results_serializers.EmployeeCountByDepartmentSerializer(data=list(result), many=True)
+        result_serializer.is_valid(raise_exception=True)
+        result_data = result_serializer.validated_data
+        return Response(result_data, status=status.HTTP_200_OK)
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = models.Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
+    filterset_class = filters.EmployeeFilter
+    ordering = ('-id',)
+    ordering_fields = '__all__'
 
 
 class SaleViewSet(viewsets.ModelViewSet):
@@ -115,3 +122,11 @@ class ProductGroupViewSet(viewsets.ModelViewSet):
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = models.Product.objects.all()
     serializer_class = serializers.ProductSerializer
+
+
+class StudentViewSet(viewsets.ModelViewSet):
+    queryset = models.Student.objects.all()
+    serializer_class = serializers.StudentSerializer
+    filterset_class = filters.StudentFilter
+    ordering_fields = '__all__'
+    ordering = ('-id',)

@@ -285,5 +285,4 @@ def employee_count_by_department(name):
     return models.Department.objects \
         .filter(name__icontains=name) \
         .values('name') \
-        .annotate(qty=Count('employees__id')) \
-        .values('name', 'qty')
+        .annotate(qty=Count('employees__id'), department=F('name'))

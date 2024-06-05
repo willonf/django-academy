@@ -446,3 +446,10 @@ class Product(ModelBase):
     class Meta:
         db_table = 'product'
         verbose_name = 'Product',
+
+
+class Student(ModelBase):
+    name = models.CharField(max_length=100, null=False)
+
+    class Meta:
+        db_table = 'student'

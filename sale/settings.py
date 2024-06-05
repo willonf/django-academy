@@ -35,9 +35,11 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
-    'core',
-    'rest_framework'
+    'core.apps.CoreConfig',
+    'rest_framework',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -129,5 +131,50 @@ CORS_ALLOW_METHOD = default_methods
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'COERCE_DECIMAL_TO_STRING': False
+    'COERCE_DECIMAL_TO_STRING': False,
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+    ),
+}
+
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        }
+    },
+    'loggers': {
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        },
+        'django': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+        'django.request': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+    }
+}
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'America/Manaus'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+ASGI_APPLICATION = 'sale.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        }
+    }
 }
